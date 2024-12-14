@@ -1,0 +1,139 @@
+User collection:
+{
+  "_id": "userId1",
+  "name": "John Doe",
+  "email": "john@example.com",
+  "codekata_score": 120,
+  "attendance": [
+    {"date": "2023-10-01", "status": "present"},
+    {"date": "2023-10-02", "status": "absent"}
+  ],
+  "tasks": [
+    {"task_id": "task1", "submitted": true, "date": "2023-10-02"},
+    {"task_id": "task2", "submitted": false, "date": "2023-10-03"}
+  ],
+  "mentor_id": "mentor1"
+}
+
+codekata:
+
+{
+  "_id": "codekata1",
+  "user_id": "userId1",
+  "problems_solved": 50
+}
+
+attendance:
+
+{
+  "_id": "attendance1",
+  "user_id": "userId1",
+  "date": "2023-10-02",
+  "status": "absent"
+}
+
+topics collection:
+
+{
+  "_id": "topic1",
+  "title": "MongoDB Basics",
+  "date": "2023-10-15"
+}
+
+task collection:
+
+{
+  "_id": "task1",
+  "title": "Build a MongoDB Schema",
+  "date": "2023-10-15",
+  "assigned_to": ["userId1", "userId2"]
+}
+
+company collection:
+
+{
+  "_id": "drive1",
+  "company_name": "Google",
+  "date": "2023-10-20",
+  "appeared_students": ["userId1", "userId2"]
+}
+
+mentor collection:
+
+{
+  "_id": "mentor1",
+  "name": "Jane Smith",
+  "mentees": ["userId1", "userId2", "userId3"]
+}
+
+
+1. Find all the topics and tasks which are taught in the month of October
+javascript
+
+db.topics.find({ date: { $gte: ISODate("2023-10-01"), $lte: ISODate("2023-10-31") } });
+db.tasks.find({ date: { $gte: ISODate("2023-10-01"), $lte: ISODate("2023-10-31") } });
+
+
+2. Find all the company drives which appeared between 15 Oct 2020 and 31 Oct 2020
+javascript
+
+db.company_drives.find({ 
+  date: { $gte: ISODate("2020-10-15"), $lte: ISODate("2020-10-31") } 
+});
+
+
+3. Find all the company drives and students who appeared for the placement
+javascript
+
+db.company_drives.aggregate([
+  {
+    $lookup: {
+      from: "users",
+      localField: "appeared_students",
+      foreignField: "_id",
+      as: "students"
+    }
+  }
+]);
+
+
+4. Find the number of problems solved by the user in Codekata
+javascript
+
+db.codekata.aggregate([
+  {
+    $group: {
+      _id: "$user_id",
+      total_problems_solved: { $sum: "$problems_solved" }
+    }
+  }
+]);
+
+
+5. Find all the mentors with mentee counts more than 15
+javascript
+
+db.mentors.find({
+  $expr: { $gt: [{ $size: "$mentees" }, 15] }
+});
+
+
+6. Find the number of users who are absent and task not submitted between 15 Oct 2020 and 31 Oct 2020
+javascript
+
+
+db.users.aggregate([
+  {
+    $match: {
+      $and: [
+        { "attendance.date": { $gte: ISODate("2020-10-15"), $lte: ISODate("2020-10-31") } },
+        { "attendance.status": "absent" },
+        { "tasks.date": { $gte: ISODate("2020-10-15"), $lte: ISODate("2020-10-31") } },
+        { "tasks.submitted": false }
+      ]
+    }
+  },
+  {
+    $count: "absent_users_with_unsubmitted_tasks"
+  }
+]);
